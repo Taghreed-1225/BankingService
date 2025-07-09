@@ -26,7 +26,7 @@ public class TransactionController {
 
     private TransactionService transactionService;
 
-    public TransactionController(TransactionService transactionService , @RequestHeader("Authorization") String token) {
+    public TransactionController(TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
@@ -45,7 +45,13 @@ public class TransactionController {
             return new ResponseEntity<>("Invalid token", HttpStatus.UNAUTHORIZED);
         }
 
-
+        AccountDto accountDto= accountService.getAccountById(accountId);
+        // Check userId ownership
+        ResponseEntity<Integer> response = getUserId(token);
+        int userIdFromToken = response.getBody();
+        if (userIdFromToken != accountDto.getUserId()) {
+            return new ResponseEntity<>("You are not authorized to access this account", HttpStatus.UNAUTHORIZED);
+        }
 
         TransactionDto transaction = transactionService.deposit(accountId, amount, notes) ;
         return new ResponseEntity<>(transaction, HttpStatus.CREATED);
@@ -64,6 +70,8 @@ public class TransactionController {
         }
 
         TransactionDto transaction = transactionService.withdraw(accountId, amount, notes);
+
+
         AccountDto accountDto= accountService.getAccountById(accountId);
         // Check userId ownership
         ResponseEntity<Integer> response = getUserId(token);

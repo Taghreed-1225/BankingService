@@ -60,6 +60,20 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "An error occurred while processing the deposit", null));
         }
+<<<<<<< HEAD
+=======
+
+        AccountDto accountDto= accountService.getAccountById(accountId);
+        // Check userId ownership
+        ResponseEntity<Integer> response = getUserId(token);
+        int userIdFromToken = response.getBody();
+        if (userIdFromToken != accountDto.getUserId()) {
+            return new ResponseEntity<>("You are not authorized to access this account", HttpStatus.UNAUTHORIZED);
+        }
+
+        TransactionDto transaction = transactionService.deposit(accountId, amount, notes) ;
+        return new ResponseEntity<>(transaction, HttpStatus.CREATED);
+>>>>>>> 3ff1a7743c9410e70e5d575fc6cb2db65268e509
     }
 
     // Withdraw money
@@ -97,6 +111,22 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "An error occurred while processing the withdrawal", null));
         }
+<<<<<<< HEAD
+=======
+
+        TransactionDto transaction = transactionService.withdraw(accountId, amount, notes);
+
+
+        AccountDto accountDto= accountService.getAccountById(accountId);
+        // Check userId ownership
+        ResponseEntity<Integer> response = getUserId(token);
+        int userIdFromToken = response.getBody();
+        if (userIdFromToken != accountDto.getUserId()) {
+            return new ResponseEntity<>("You are not authorized to access this account", HttpStatus.UNAUTHORIZED);
+        }
+
+        return new ResponseEntity<>(transaction, HttpStatus.CREATED);
+>>>>>>> 3ff1a7743c9410e70e5d575fc6cb2db65268e509
     }
 
     @GetMapping("/history/{accountId}")

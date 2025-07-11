@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
@@ -27,66 +26,60 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Autowired
     private UserDetailsService userDetailsService;
 
-
-
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        System.out.println("doFilterInternal");
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+
+        // تخطي الفلتر لبعض المسارات
+        String path = request.getServletPath();
+        if (path.startsWith("/activateUser") || path.startsWith("/regenerateOtp") || path.startsWith("/rest/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-            System.out.println("try1");
             String authHeader = request.getHeader("Authorization");
-            String accessToken = null;
-            String userEmail = null;
 
-            String path = request.getServletPath();
-
-            if (path.startsWith("/activateUser")) {
-                System.out.println("if1");
-                filterChain.doFilter(request, response); // skip JWT filter
-                return;
-            }
-            if (path.startsWith("/regenerateOtp")) {
-                System.out.println("if3");
-                filterChain.doFilter(request, response); // skip JWT filter
-                return;
-            }
-            if (path.startsWith("/rest/auth/")) {
-                System.out.println("if2");
-                filterChain.doFilter(request, response);
+            // التحقق من وجود الـ header وصيغته
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing Authorization header");
                 return;
             }
 
+            String accessToken = authHeader.substring(7); // استخراج الـ token بعد "Bearer "
 
-
-            accessToken = authHeader.substring("Bearer ".length());
+            // التحقق من صحة الـ token
             Claims claims = jwtService.resolveClaims(request);
-            userEmail = claims.getSubject();
+            if (claims == null) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
+                return;
+            }
+
+            String userEmail = claims.getSubject();
             Integer userId = (Integer) claims.get("userId");
-            request.setAttribute("userId", userId); // 👈 حفظناه في request عشان نستخدمه في الكونترولر أو السيرفيس بعد كده
 
+            if (userEmail == null) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT claims");
+                return;
+            }
 
-            if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
-                System.out.println("if3");
+            request.setAttribute("userId", userId);
 
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-                if(userDetails != null && jwtService.isTokenValid(accessToken , userDetails)) {
-                    System.out.println("if4");
-
-                    System.out.println("email : " + userEmail);
-
-                    Authentication authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-
+                if (userDetails != null && jwtService.isTokenValid(accessToken, userDetails)) {
+                    Authentication authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
 
-        }catch (Exception e){
-            e.printStackTrace();
-            System.out.println("catch");
+            filterChain.doFilter(request, response);
 
+        } catch (Exception e) {
+            logger.error("JWT processing error", e);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error processing JWT token");
         }
-        filterChain.doFilter(request, response);
     }
 }

@@ -62,7 +62,6 @@ public class Controller {
     @GetMapping("/search")
 
     public User searchUser(@RequestParam String email){
-
         return   userService.searchUser(email);
     }
     @Operation(summary = "Forget password send OTP ")

@@ -8,6 +8,7 @@ import com.progect.BankingApp.repositry.AccountRepository;
 import com.progect.BankingApp.mapper.TransactionMapper;
 import com.progect.BankingApp.repositry.TransactionRepository;
 import com.progect.BankingApp.service.TransactionService;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,16 +17,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
-    private TransactionRepository transactionRepository;
-    private AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
+    private final AccountRepository accountRepository;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository,
-                                  AccountRepository accountRepository) {
-        this.transactionRepository = transactionRepository;
-        this.accountRepository = accountRepository;
-    }
 
     @Override
     @Transactional
@@ -60,25 +57,20 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     public TransactionDto withdraw(Long accountId, double amount, String notes) {
-            // Find account
             Account account = accountRepository.findById(accountId)
                     .orElseThrow(() -> new RuntimeException("Account not found"));
 
-            // Validate amount
             if (amount <= 0) {
                 throw new RuntimeException("Amount must be positive");
             }
 
-            // Check sufficient balance
-            if (account.getBalance() < amount) {
+           if (account.getBalance() < amount) {
                 throw new RuntimeException("Insufficient balance");
             }
 
-            // Update account balance
             account.setBalance(account.getBalance() - amount);
             Account savedAccount = accountRepository.save(account);
 
-            // Create transaction record
             Transaction transaction = Transaction.builder()
                     .account(savedAccount)
                     .type(TransactionType.WITHDRAWA)

@@ -47,6 +47,9 @@ public class AuthService
     @Autowired
     private OtpService otpService;
 
+    @Autowired
+    private EmailServiceImpl emailService;
+
     public AuthenticationResponse login(LoginRequest request)
     {  System.out.println(" AuthenticationResponse login");
 
@@ -72,10 +75,20 @@ public class AuthService
 
     public AuthenticationResponse register(RegisterRequest request)
     {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalStateException("Email is already taken");
+        }
+
+        if (userRepository.findByName(request.getName()).isPresent()) {
+            throw new IllegalStateException("Name is already taken");
+        }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .enabled(true)
+                .enabled(false)
+                .phone(request.getPhone())
+                .name(request.getName())
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -86,7 +99,7 @@ public class AuthService
                Otp otp = otpService.generateOtp(user);
         //        // store otp
                 otpRepo.save(otp);
-        //      //  emailService.sendOtpMsg(user.getEmail(),"Your Verification Code", otp);
+          emailService.sendOtpMsg(user.getEmail(),"Your Verification Code", otp.getOtp());
         return new AuthenticationResponse(jwtToken , request.getEmail());
     }
 

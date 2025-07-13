@@ -22,8 +22,8 @@ public class TransactionController {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String USER_SERVICE_URL = "http://localhost:9994/validateToken";
-    private static final String USER_SERVICE_URL2 = "http://localhost:9994/extractUserId";
+    private static final String USER_SERVICE_URL = "http://localhost:8080/validateToken";
+    private static final String USER_SERVICE_URL2 = "http://localhost:8080/extractUserId";
 
     private TransactionService transactionService;
 
@@ -57,6 +57,7 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(false, e.getMessage(), null));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "An error occurred while processing the deposit", null));
         }

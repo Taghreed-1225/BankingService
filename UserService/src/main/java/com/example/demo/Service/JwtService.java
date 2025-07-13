@@ -20,7 +20,9 @@ public class JwtService {
 
     private final String secret_key = "mysecretkey";
 
-    private final long accessTokenValidity = 60*60*1000;  //valid till 30 minutes
+  //  private final long accessTokenValidity = 60*60*1000;
+  private final long accessTokenValidity = 24 * 60 * 60 * 1000; // 24 ساعة
+
 
     private final JwtParser jwtParser;
 
@@ -42,7 +44,17 @@ public class JwtService {
     }
 
     public String createToken(User user , Map<String , Object> extraClaims) {
+        System.out.println("1");
+
+        Date expiration = new Date(System.currentTimeMillis() + accessTokenValidity);
+        System.out.println("Token expires at: " + expiration);
+        System.out.println("2");
+
+
+
         extraClaims.put("userId", user.getId());
+        System.out.println("3");
+
 
         System.out.println("createToken");
         return Jwts.builder()
@@ -52,6 +64,8 @@ public class JwtService {
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .signWith(SignatureAlgorithm.HS256, secret_key)
                 .compact();
+
+
     }
 
     private Claims parseJwtClaims(String token)

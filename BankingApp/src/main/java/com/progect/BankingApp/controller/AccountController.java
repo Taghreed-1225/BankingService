@@ -18,20 +18,28 @@ public class AccountController {
     private final AccountService accountService;
     private final RestTemplate restTemplate;
 
-    private static final String USER_SERVICE_URL = "http://localhost:9994/validateToken";
-    private static final String USER_SERVICE_URL2 = "http://localhost:9994/extractUserId";
+    private static final String USER_SERVICE_URL = "http://localhost:8080/validateToken";
+    private static final String USER_SERVICE_URL2 = "http://localhost:8080/extractUserId";
 
     @PostMapping
     public ResponseEntity<ApiResponse> createAccount(@RequestBody AccountDto accountDto,
                                                      @RequestHeader("Authorization") String token) {
+        System.out.println(token);
         try {
             if (!isTokenValid(token)) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ApiResponse(false, "Invalid or expired token", null));
             }
+
             int userId = getUserId(token).getBody();
             accountDto.setUserId(userId);
             AccountDto createdAccount = accountService.createAccount(accountDto);
+
+            int userIdFromToken = getUserId(token).getBody();
+            if (userIdFromToken != accountDto.getUserId()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ApiResponse(false, "Forbidden: You do not own this account", null));
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse(true, "Account created successfully", createdAccount));
@@ -45,6 +53,7 @@ public class AccountController {
                     .body(new ApiResponse(false, e.getMessage(), null));
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "An error occurred while creating account", null));
         }
@@ -126,19 +135,27 @@ public class AccountController {
     }
 
     private boolean isTokenValid(String token) {
+        System.out.println("1");
         HttpHeaders headers = new HttpHeaders();
+        System.out.println("2");
         headers.set("Authorization", token);
+        System.out.println("3");
         HttpEntity<String> entity = new HttpEntity<>(headers);
+        System.out.println("4");
 
         try {
+            System.out.println("5");
             ResponseEntity<String> response = restTemplate.exchange(
                     USER_SERVICE_URL,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+            System.out.println("6");
             return "valid token".equalsIgnoreCase(response.getBody());
+
         } catch (HttpClientErrorException | HttpServerErrorException e) {
+            System.out.println("7");
             return false;
         }
     }

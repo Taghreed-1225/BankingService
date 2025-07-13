@@ -27,14 +27,21 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-
     @Email
+    @Column(unique = true)
     private String email;
 
    @NotBlank
     private String password;
 
     private boolean enabled;
+
+    private long phone ;
+
+    @Column(unique = true)
+    private String name;
+
+
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Token> tokens;

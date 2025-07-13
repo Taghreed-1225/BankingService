@@ -196,7 +196,6 @@ public class UserServiceImp implements UserService{
                 user.setEnabled(true);
                 userRepository.save(user);
                 return true;
-
             }
 
         }

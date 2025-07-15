@@ -1,0 +1,58 @@
+<header class="header">
+  <button class="home-title" (click)="goToHome()">HOME</button>
+  <span class="user-icon">
+    <button class="account-icon" (click)="goToAccount()">
+      <span class="material-icons">a</span>
+    </button>
+  </span>
+</header>
+<router-outlet></router-outlet>
+
+<style>
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1976d2;
+  color: #fff;
+  padding: 10px 32px;
+  font-family: Arial, sans-serif;
+  box-shadow: 0 2px 8px #0002;
+  min-height: 56px;
+}
+.home-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+}
+.home-title:hover {
+  text-decoration: underline;
+}
+.user-icon {
+  display: flex;
+  align-items: center;
+}
+.account-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+.material-icons {
+  font-size: 2rem;
+  color: #fff;
+  vertical-align: middle;
+}
+</style>

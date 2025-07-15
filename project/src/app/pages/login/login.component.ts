@@ -23,10 +23,11 @@ export class LoginComponent {
     this.error = '';
     this.loading = true;
     this.auth.login(this.email, this.password).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
-        this.router.navigate(['/welcome']);
-      },
+        console.log('Login response:', res);
+        this.router.navigate(['/home']);
+            },
       error: (err) => {
         this.loading = false;
         this.error = err.error?.message || 'Login failed';

@@ -1,5 +1,5 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders, HTTP_INTERCEPTORS, HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import { Injectable, Provider } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
@@ -18,6 +18,7 @@ export class AuthService {
         if (res.accessToken) {
           localStorage.setItem(this.tokenKey, res.accessToken);
           localStorage.setItem('userEmail', res.email);
+          if (res.name) localStorage.setItem('userName', res.name);
         }
       })
     );
@@ -29,22 +30,23 @@ export class AuthService {
       email, 
       phone, 
       password 
-    });
+    }).pipe(
+      tap(res => {
+        if (res.name) localStorage.setItem('userName', res.name);
+      })
+    );
   }
 
   verifyOtp(email: string, otp: string): Observable<any> {
-    // Clean email and OTP
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.trim();
-    
-    console.log('Verifying OTP:', { email: cleanEmail, otp: cleanOtp });
-    
     return this.http.post<any>(`${this.apiUrl}/verify?email=${encodeURIComponent(cleanEmail)}&otp=${cleanOtp}`, {});
   }
 
   logout() {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
     this.router.navigate(['/login']);
   }
 
@@ -56,3 +58,25 @@ export class AuthService {
     return localStorage.getItem(this.tokenKey);
   }
 }
+
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      const cloned = req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return next.handle(cloned);
+    }
+    return next.handle(req);
+  }
+}
+
+export const authInterceptorProvider: Provider = {
+  provide: HTTP_INTERCEPTORS,
+  useClass: AuthInterceptor,
+  multi: true
+};

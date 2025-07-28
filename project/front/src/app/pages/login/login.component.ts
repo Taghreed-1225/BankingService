@@ -26,8 +26,9 @@ export class LoginComponent {
       next: (res) => {
         this.loading = false;
         console.log('Login response:', res);
-        this.router.navigate(['/home']);
-            },
+        localStorage.setItem('accessToken', res.accessToken);
+        this.router.navigate(['/accounts']);
+      },
       error: (err) => {
         this.loading = false;
         this.error = err.error?.message || 'Login failed';

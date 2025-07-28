@@ -3,9 +3,11 @@ package com.progect.BankingApp.controller;
 import com.progect.BankingApp.common.ApiResponse;
 import com.progect.BankingApp.dto.AccountDto;
 import com.progect.BankingApp.dto.TransactionDto;
+import com.progect.BankingApp.dto.TransactionRequest;
 import com.progect.BankingApp.entity.Account;
 import com.progect.BankingApp.service.AccountService;
 import com.progect.BankingApp.service.TransactionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +16,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-
+@Slf4j
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
@@ -36,10 +38,7 @@ public class TransactionController {
 
     // Deposit money
     @PostMapping("/deposit")
-    public ResponseEntity<ApiResponse> deposit(
-            @RequestParam Long accountId,
-            @RequestParam double amount,
-            @RequestParam(required = false) String notes,
+    public ResponseEntity<ApiResponse> deposit(@RequestBody TransactionRequest transactionRequest,
             @RequestHeader("Authorization") String token) {
         try {
             if (!isTokenValid(token)) {
@@ -47,7 +46,12 @@ public class TransactionController {
                         .body(new ApiResponse(false, "Invalid or expired token", null));
             }
 
-            TransactionDto transaction = transactionService.deposit(accountId, amount, notes);
+            String cardNumber = transactionRequest.getCardNumber();
+            double amount = transactionRequest.getAmount();
+            log.info("you want to deposit Amount {}, for customer with card Number {}",
+                    amount, cardNumber);
+
+            TransactionDto transaction = transactionService.deposit( cardNumber,  amount);
             return ResponseEntity.status(HttpStatus.OK)
                     .body(new ApiResponse(true, "Transaction deposited successfully", transaction));
         } catch (HttpClientErrorException e) {
@@ -66,9 +70,7 @@ public class TransactionController {
     // Withdraw money
     @PostMapping("/withdraw")
     public ResponseEntity<ApiResponse> withdraw(
-            @RequestParam Long accountId,
-            @RequestParam double amount,
-            @RequestParam(required = false) String notes,
+            @RequestBody TransactionRequest transactionRequest,
             @RequestHeader("Authorization") String token) {
         try {
             if (!isTokenValid(token)) {
@@ -76,25 +78,17 @@ public class TransactionController {
                         .body(new ApiResponse(false, "Invalid or expired token", null));
             }
 
-            AccountDto accountDto = accountService.getAccountById(accountId);
-            ResponseEntity<Integer> response = getUserId(token);
-            int userIdFromToken = response.getBody();
+            String cardNumber = transactionRequest.getCardNumber();
+            double amount = transactionRequest.getAmount();
 
-            if (userIdFromToken != accountDto.getUserId()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ApiResponse(false, "You are not authorized to access this account", null));
-            }
-
-            TransactionDto transaction = transactionService.withdraw(accountId, amount, notes);
+            TransactionDto transaction = transactionService.withdraw(cardNumber, amount);
             return ResponseEntity.status(HttpStatus.OK)
                     .body(new ApiResponse(true, "Withdrawal completed successfully", transaction));
-        } catch (HttpClientErrorException e) {
-            return ResponseEntity.status(e.getStatusCode())
-                    .body(new ApiResponse(false, e.getStatusText(), null));
-        } catch (IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ApiResponse(false, e.getMessage(), null));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "An error occurred while processing the withdrawal", null));
         }
@@ -135,19 +129,30 @@ public class TransactionController {
     }
 
     private boolean isTokenValid(String token) {
+        System.out.println("1");
         HttpHeaders headers = new HttpHeaders();
+        System.out.println("2");
         headers.set("Authorization", token);
+
+        System.out.println("3");
         HttpEntity<String> entity = new HttpEntity<>(headers);
+        System.out.println("4");
 
         try {
+            System.out.println("5");
             ResponseEntity<String> response = restTemplate.exchange(
                     USER_SERVICE_URL,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+            System.out.println("6");
             return "valid token".equalsIgnoreCase(response.getBody());
+
         } catch (HttpClientErrorException | HttpServerErrorException e) {
+            System.out.println("7");
+            System.out.println("HTTP Error: " + e.getStatusCode());
+            System.out.println("Error Body: " + e.getResponseBodyAsString());
             return false;
         }
     }

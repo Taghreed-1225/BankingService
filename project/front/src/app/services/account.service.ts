@@ -23,18 +23,32 @@ export class AccountService {
   }
 
   deposit(accountId: number, amount: number, notes: string = ''): Observable<any> {
-    return this.http.post(`${this.apiUrl}/transactions/deposit?accountId=${accountId}&amount=${amount}&notes=${encodeURIComponent(notes)}`, {});
+    return this.http.post(
+      `${this.apiUrl}/transactions/deposit?accountId=${accountId}&amount=${amount}&notes=${encodeURIComponent(notes)}`,
+      {}
+    );
   }
 
   withdraw(accountId: number, amount: number, notes: string = ''): Observable<any> {
-    return this.http.post(`${this.apiUrl}/transactions/withdraw?accountId=${accountId}&amount=${amount}&notes=${encodeURIComponent(notes)}`, {});
+    return this.http.post(
+      `${this.apiUrl}/transactions/withdraw?accountId=${accountId}&amount=${amount}&notes=${encodeURIComponent(notes)}`,
+      {}
+    );
   }
 
   getAccountHistory(accountId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/transactions/history/${accountId}`);
   }
 
+  getAccountTransactions(accountId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/transactions/history/${accountId}`);
+  }
+
   getAccountByUserId(userId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/accounts/user/${userId}`);
+  }
+
+  getAccountsForCurrentUser(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/accounts/user`);
   }
 }

@@ -56,7 +56,10 @@
       </thead>
       <tbody>
         <tr *ngFor="let t of transactions">
-          <td>{{ t.date || t.timestamp || t.createdAt | date:'short' }}</td>
+        
+          <td>{{ t.displayDate | date:'short' }}</td>
+
+
           <td>{{ t.type || t.transactionType }}</td>
           <td>{{ t.amount }}</td>
           <td>{{ t.notes }}</td>

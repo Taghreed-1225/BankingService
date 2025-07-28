@@ -101,7 +101,7 @@ public class Controller {
             ,@ApiResponse(responseCode = "409",description = "CONFLICT, User already active")
             ,@ApiResponse(responseCode = "403",description = "FORBIDDEN, CHECK YOUR TOKEN")
     })
-    @PutMapping("/activateUser")
+    @PostMapping("/verify")
     public boolean activateUser(@RequestHeader String email, @RequestHeader String otp)
     {
         return userService.activateUser(email ,otp);
@@ -143,6 +143,8 @@ public class Controller {
     })
     @PostMapping("/validateToken")
     public String validateToken(@RequestHeader String Authorization) {
+        System.out.println("here in validate ");
+        System.out.println("TOKEN RECEIVED: " + Authorization);
         return userService.validateToken(Authorization);
     }
 

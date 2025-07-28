@@ -26,9 +26,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionDto deposit(Long accountId, double amount, String notes) {
+    public TransactionDto deposit(String cardNumber, double amount) {
         // Find account
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByCardNumber(cardNumber)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
         // Validate amount
@@ -45,7 +45,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .account(savedAccount)
                 .type(TransactionType.DEPOSIT)
                 .amount(amount)
-                .notes(notes)
                 .transactionDate(LocalDateTime.now())
                 .balanceAfter(savedAccount.getBalance())
                 .build();
@@ -56,8 +55,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional
-    public TransactionDto withdraw(Long accountId, double amount, String notes) {
-            Account account = accountRepository.findById(accountId)
+    public TransactionDto withdraw(String cardNumber, double amount) {
+            Account account = accountRepository.findByCardNumber(cardNumber)
                     .orElseThrow(() -> new RuntimeException("Account not found"));
 
             if (amount <= 0) {
@@ -75,7 +74,6 @@ public class TransactionServiceImpl implements TransactionService {
                     .account(savedAccount)
                     .type(TransactionType.WITHDRAWA)
                     .amount(amount)
-                    .notes(notes)
                     .transactionDate(LocalDateTime.now())
                     .balanceAfter(savedAccount.getBalance())
                     .build();

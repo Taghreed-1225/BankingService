@@ -65,27 +65,21 @@ public class UserServiceImp implements UserService{
     @Override
     public String validateToken(String Authorization) {
         System.out.println("validate token function");
-
         String token = Authorization.replace("Bearer ", "");
-
         System.out.println(token);
-
         String email = jwtService. extractEmail(token);
         System.out.println(email);
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         System.out.println(authentication.getName());
-
         if (authentication == null || !authentication.isAuthenticated()) {
             System.out.println("if in userservice");
             return "invalid token";
         }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         System.out.println(userDetails.getUsername());
-       boolean isValid= jwtService.isTokenValid(token,userDetails);
+        boolean isValid= jwtService.isTokenValid(token,userDetails);
         System.out.println(isValid);
-       return isValid ? "valid token" :"invalid token";
+        return isValid ? "valid token" :"invalid token";
 
     }
 

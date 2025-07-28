@@ -7,7 +7,7 @@ import { Observable, tap } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:9994/rest/auth';
+  private apiUrl = 'http://localhost:8080/rest/auth';
   private tokenKey = 'accessToken';
 
   constructor(private http: HttpClient, private router: Router) { }
@@ -40,8 +40,15 @@ export class AuthService {
   verifyOtp(email: string, otp: string): Observable<any> {
     const cleanEmail = email.trim().toLowerCase();
     const cleanOtp = otp.trim();
-    return this.http.post<any>(`${this.apiUrl}/verify?email=${encodeURIComponent(cleanEmail)}&otp=${cleanOtp}`, {});
+  
+    const headers = new HttpHeaders()
+      .set('email', cleanEmail)
+      .set('otp', cleanOtp);
+  
+    return this.http.post<any>(`${this.apiUrl}/verify`, {}, { headers });
   }
+  
+  
 
   logout() {
     localStorage.removeItem(this.tokenKey);
@@ -63,7 +70,9 @@ export class AuthService {
 export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = localStorage.getItem('accessToken');
-    if (token) {
+    // لا تضف الهيدر إذا كان الطلب login أو register
+    const isAuthRequest = req.url.includes('/login') || req.url.includes('/register');
+    if (token && !isAuthRequest) {
       const cloned = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`

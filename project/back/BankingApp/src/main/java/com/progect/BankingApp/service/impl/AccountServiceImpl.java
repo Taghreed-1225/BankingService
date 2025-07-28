@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class AccountServiceImpl implements AccountService {
@@ -61,5 +63,14 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
         accountRepository.delete(account);
+    }
+
+    @Override
+    public List<AccountDto> getAccountsByUserId(int userId) {
+        List<Account> accounts = accountRepository.findByUserId(userId);
+        System.out.println("عدد الحسابات: " + accounts.size());
+        return accounts.stream()
+                .map(AccountMapper::mapToAccountDto)
+                .toList();
     }
 }

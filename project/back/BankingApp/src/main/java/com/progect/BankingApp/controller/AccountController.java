@@ -10,6 +10,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/accounts")
 @AllArgsConstructor
@@ -62,9 +64,13 @@ public class AccountController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getAccountById(@PathVariable Long id,
+
                                                       @RequestHeader("Authorization") String token) {
+
+        System.out.println(" in   getaccount");
         try {
             if (!isTokenValid(token)) {
+
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ApiResponse(false, "Invalid or expired token", null));
             }
@@ -134,6 +140,21 @@ public class AccountController {
         }
     }
 
+    @GetMapping("/user")
+    public ResponseEntity<ApiResponse> getAccountsForUser(@RequestHeader("Authorization") String token) {
+        if (!isTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse(false, "Invalid or expired token", null));
+        }
+
+        int userId = getUserId(token).getBody();
+        System.out.println("USER ID FROM TOKEN = " + userId);
+
+        List<AccountDto> accounts = accountService.getAccountsByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse(true, "User accounts retrieved", accounts));
+    }
+
+
     private boolean isTokenValid(String token) {
         System.out.println("1");
         HttpHeaders headers = new HttpHeaders();
@@ -161,17 +182,21 @@ public class AccountController {
     }
 
     private ResponseEntity<Integer> getUserId(String token) {
+        System.out.println("in getuserid");
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
+        System.out.println("in getuserid2");
 
         try {
+            System.out.println("in getuserid7");
             ResponseEntity<Integer> response = restTemplate.exchange(
                     USER_SERVICE_URL2,
                     HttpMethod.POST,
                     entity,
                     Integer.class
             );
+            System.out.println("in getuserid3");
 
             if (response.getBody() == null || response.getBody() <= 0) {
                 throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Invalid user ID from token");
@@ -179,6 +204,7 @@ public class AccountController {
 
             return response;
         } catch (HttpClientErrorException | HttpServerErrorException e) {
+            System.out.println("in getuserid4");
             throw new HttpClientErrorException(e.getStatusCode(), "Failed to extract user ID: " + e.getMessage());
         }
     }

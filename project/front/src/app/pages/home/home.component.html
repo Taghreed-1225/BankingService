@@ -1,24 +1,17 @@
 <div class="home-content">
-  <ng-container *ngIf="account; else noAccount">
+  <ng-container *ngIf="accountInfo; else noAccount">
     <h3>Your Account</h3>
     <div class="account-info">
-      <div><b>Name:</b> {{ account.name }}</div>
-      <div><b>Card Number:</b> {{ account.cardNumber }}</div>
-      <div><b>Balance:</b> {{ account.balance }} EGP</div>
+      <div><b>Card Number:</b> {{ accountInfo.cardNumber }}</div>
+      <div><b>Balance:</b> {{ accountInfo.balance | number:'1.2-2' }} EGP</div>
     </div>
+    <button (click)="goToAccount()" class="view-account-btn">View Account Details</button>
   </ng-container>
   <ng-template #noAccount>
-    <div *ngIf="showAddAccount" class="add-account-modal">
-      <h3>Add New Account</h3>
-      <form (ngSubmit)="submitAddAccount()" #addAccountForm="ngForm">
-        <input type="text" placeholder="Card Number" [(ngModel)]="addCardNumber" name="addCardNumber" required />
-        <input type="text" placeholder="Name" [(ngModel)]="addName" name="addName" required />
-        <input type="number" placeholder="Balance" [(ngModel)]="addBalance" name="addBalance" required />
-        <button type="submit">Add Account</button>
-        <button type="button" (click)="closeAddAccount()">Cancel</button>
-      </form>
-      <div *ngIf="addMessage" class="success">{{ addMessage }}</div>
-      <div *ngIf="addError" class="error">{{ addError }}</div>
+    <div class="no-account">
+      <h3>Welcome!</h3>
+      <p>Your account information will appear here after login.</p>
+      <div *ngIf="error" class="error">{{ error }}</div>
     </div>
   </ng-template>
 </div>
@@ -36,7 +29,7 @@
   font-size: 1.1rem;
   margin-bottom: 18px;
 }
-.create-account-btn {
+.view-account-btn {
   background: #1976d2;
   color: #fff;
   border: none;
@@ -47,29 +40,12 @@
   cursor: pointer;
   margin-bottom: 18px;
 }
-.create-account-btn:hover {
+.view-account-btn:hover {
   background: #1256a3;
 }
-.add-account-modal {
-  background: #f7faff;
-  border: 1px solid #1976d2;
-  border-radius: 8px;
-  padding: 18px;
-  margin-bottom: 18px;
-}
-input[type="text"], input[type="number"] {
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #bbb;
-  font-size: 1rem;
-}
-.success {
-  color: #388e3c;
-  margin-top: 10px;
+.no-account {
   text-align: center;
-  font-weight: 500;
+  color: #666;
 }
 .error {
   color: #d32f2f;

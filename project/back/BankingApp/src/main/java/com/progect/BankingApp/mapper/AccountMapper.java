@@ -1,32 +1,38 @@
 package com.progect.BankingApp.mapper;
 
 
-import com.progect.BankingApp.dto.AccountDto;
-import com.progect.BankingApp.entity.Account;
 
+import com.progect.BankingApp.entity.Account;
+import com.progect.BankingApp.model.account.AccountRequestDTO;
+import org.springframework.stereotype.Component;
+
+@Component
 public class AccountMapper {
 
-    public static Account mapToAccount(AccountDto accountDto) {
-        Account account =Account.builder()
-                .id(accountDto.getId())
-                .cardNumber(accountDto.getCardNumber())
-                .name(accountDto.getName())
-                .balance(accountDto.getBalance())
-                .userId(accountDto.getUserId())
-                .build();
+    public Account toEntity(AccountRequestDTO accountRequestDTO) {
+        if (accountRequestDTO == null) {
+            return null;
+        }
+
+        Account account = new Account();
+        account.setName(accountRequestDTO.getName());
+        account.setEmail(accountRequestDTO.getEmail());
+        account.setPassword(accountRequestDTO.getPassword());
+        // cardNumber will be ignored and set separately
 
         return account;
     }
 
+    public AccountRequestDTO toDTO(Account account) {
+        if (account == null) {
+            return null;
+        }
 
-    public static AccountDto mapToAccountDto(Account account) {
-        AccountDto accountDto = new AccountDto(
-                account.getId(),
-                account.getCardNumber(),
-                account.getName(),
-                account.getBalance(),
-                account.getUserId()
-        );
-        return accountDto;
+        AccountRequestDTO dto = new AccountRequestDTO();
+        dto.setName(account.getName());
+        dto.setEmail(account.getEmail());
+        dto.setPassword(account.getPassword());
+
+        return dto;
     }
 }

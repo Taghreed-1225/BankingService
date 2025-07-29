@@ -1,46 +1,55 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  email = '';
-  password = '';
+  loginForm: FormGroup;
   error = '';
   loading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
 
   onSubmit() {
-    this.error = '';
-    this.loading = true;
-    this.auth.login(this.email, this.password).subscribe({
-      next: (res) => {
-        this.loading = false;
-        console.log('Login response:', res);
-        localStorage.setItem('accessToken', res.accessToken);
-        this.router.navigate(['/accounts']);
-      },
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Login failed';
-      }
-    });
+    if (this.loginForm.valid) {
+      this.loading = true;
+      this.error = '';
+      
+      const { email, password } = this.loginForm.value;
+      
+      this.authService.login(email, password).subscribe({
+        next: (response) => {
+          this.loading = false;
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('userEmail', email);
+          this.router.navigate(['/dashboard']);
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = err.error?.message || 'Login failed. Please check your credentials.';
+        }
+      });
+    }
   }
 
   goToRegister() {
     this.router.navigate(['/register']);
-  }
-
-  goToVerify() {
-    this.router.navigate(['/verify']);
   }
 }

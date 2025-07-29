@@ -1,6 +1,7 @@
 package com.progect.BankingApp.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,10 +18,11 @@ public class Transaction {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id" , nullable = false)
     private Account account;
 
-
+    @Column(nullable = false)
+    @PositiveOrZero(message = "Amount must be positive or zero")
     private double amount;
 
     private String notes;
@@ -28,9 +30,14 @@ public class Transaction {
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
 
-    private double balanceAfter;
 
-
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TransactionType type;
+
+    private String payment_method = "credit card";
+
+    private LocalDateTime created_at;
+
+    private double balanceAfter;
 }

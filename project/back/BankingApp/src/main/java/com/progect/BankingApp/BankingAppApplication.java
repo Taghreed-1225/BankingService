@@ -1,12 +1,16 @@
 package com.progect.BankingApp;
 
 import com.progect.BankingApp.entity.Account;
+import com.progect.BankingApp.security.RsaKeyProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.util.Date;
-
+@EnableConfigurationProperties(RsaKeyProperties.class)
+@ComponentScan(basePackages = "com.progect.BankingApp")
 @SpringBootApplication
 public class BankingAppApplication {
 

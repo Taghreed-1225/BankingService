@@ -1,76 +1,70 @@
 package com.progect.BankingApp.service.impl;
 
-import com.progect.BankingApp.Exception.ResourceNotFoundException;
-import com.progect.BankingApp.dto.AccountDto;
+import com.progect.BankingApp.Exception.RecordNotFoundException;
 import com.progect.BankingApp.entity.Account;
-import com.progect.BankingApp.mapper.AccountMapper;
+import com.progect.BankingApp.mapper.TransactionMapper;
+import com.progect.BankingApp.model.transaction.TransactionResponseDTO;
 import com.progect.BankingApp.repositry.AccountRepository;
 import com.progect.BankingApp.service.AccountService;
-import lombok.AllArgsConstructor;
+import com.progect.BankingApp.utils.SecurityUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+
+@RequiredArgsConstructor
+@Slf4j
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
+    private final TransactionMapper transactionMapper;
+
 
     @Override
-    @Transactional
-    public AccountDto createAccount(AccountDto accountDto) {
-        if (accountDto.getUserId() <= 0) {
-            throw new IllegalArgumentException("Invalid user ID");
+    public Double viewAuthenticatedAccountBalance() {
+        Account currentAccount = getCurrentAccount();
+        Double accountBalance = currentAccount.getBalance();
+        log.info("The current Balance is {}", accountBalance);
+        return accountBalance;
+    }
+
+    @Override
+    public List<TransactionResponseDTO> viewAuthenticatedAccountTransactions() {
+        Account currentAccount = getCurrentAccount();
+        List<TransactionResponseDTO> transactionResponseDTOS = currentAccount.getTransactions()
+                .stream()
+                .map(transactionMapper::mapToTransactionResponseDTO)
+                .collect(Collectors.toList());
+
+        if(transactionResponseDTOS.isEmpty()){
+            log.error("There is no Transactions for this user with Email {}", currentAccount);
         }
 
-        if (accountRepository.existsByCardNumber(accountDto.getCardNumber())) {
-            throw new IllegalArgumentException("Account with this card number already exists");
-        }
-
-        Account account = AccountMapper.mapToAccount(accountDto);
-        Account savedAccount = accountRepository.save(account);
-        return AccountMapper.mapToAccountDto(savedAccount);
+        log.info("This All Transactions Details for This Account {}", transactionResponseDTOS);
+        return transactionResponseDTOS;
     }
 
     @Override
-    public AccountDto getAccountById(Long id) {
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
-        return AccountMapper.mapToAccountDto(account);
+    public String getAuthenticatedAccountCardNumber() {
+        Account currentAccount = getCurrentAccount();
+        String accountCardNumber = currentAccount.getCardNumber();
+        log.info("The current Account Card Number is {}", accountCardNumber);
+        return accountCardNumber;
     }
 
-    @Override
-    @Transactional
-    public AccountDto updateAccount(Long id, AccountDto accountDto) {
-        Account existingAccount = accountRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
-        if (accountRepository.existsByCardNumber(accountDto.getCardNumber())) {
-            throw new IllegalArgumentException("Account with this card number already exists");
-        }
-        existingAccount.setCardNumber(accountDto.getCardNumber());
-        existingAccount.setBalance(accountDto.getBalance());
-        existingAccount.setUserId(accountDto.getUserId());
-
-        Account updatedAccount = accountRepository.save(existingAccount);
-        return AccountMapper.mapToAccountDto(updatedAccount);
-    }
-
-    @Override
-    @Transactional
-    public void deleteAccount(Long id) {
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
-        accountRepository.delete(account);
-    }
-
-    @Override
-    public List<AccountDto> getAccountsByUserId(int userId) {
-        List<Account> accounts = accountRepository.findByUserId(userId);
-        System.out.println("عدد الحسابات: " + accounts.size());
-        return accounts.stream()
-                .map(AccountMapper::mapToAccountDto)
-                .toList();
+    private Account getCurrentAccount(){
+        String currentUserEmail = SecurityUtils.getCurrentUserEmail();
+        log.info("user with Email {} want to view his Transactions ", currentUserEmail);
+        Account currentAccount =  accountRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> {
+                    log.error("Account with Email {}, doesn't Exist", currentUserEmail);
+                    return new RecordNotFoundException("Account with Email " + currentUserEmail + "doesn't Exist");
+                });
+        log.info("This is current account {}", currentAccount);
+        return currentAccount;
     }
 }

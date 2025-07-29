@@ -1,23 +1,24 @@
 package com.progect.BankingApp.service.impl;
 
-import com.progect.BankingApp.dto.TransactionDto;
+
+import com.progect.BankingApp.Exception.RecordNotFoundException;
 import com.progect.BankingApp.entity.Account;
 import com.progect.BankingApp.entity.Transaction;
 import com.progect.BankingApp.entity.TransactionType;
+import com.progect.BankingApp.model.transaction.TransactionRequest;
 import com.progect.BankingApp.repositry.AccountRepository;
-import com.progect.BankingApp.mapper.TransactionMapper;
 import com.progect.BankingApp.repositry.TransactionRepository;
 import com.progect.BankingApp.service.TransactionService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+
+@RequiredArgsConstructor
+@Slf4j
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;
@@ -25,68 +26,64 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     @Override
-    @Transactional
-    public TransactionDto deposit(String cardNumber, double amount) {
-        // Find account
-        Account account = accountRepository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+    public String deposit(TransactionRequest transactionRequest) {
+        String cardNumber = transactionRequest.getCardNumber();
+        double amount = transactionRequest.getAmount();
+        log.info("you want to deposit Amount {}, for customer with card Number {}",
+                amount, cardNumber);
 
-        // Validate amount
-        if (amount <= 0) {
-            throw new RuntimeException("Amount must be positive");
+        Account cardAccount = IsValidCard(cardNumber);
+        double accountBalance = cardAccount.getBalance();
+        log.info("current Balance for Account with card Number {}, is {}", cardNumber, accountBalance);
+        cardAccount.setBalance(accountBalance + amount);
+        accountRepository.save(cardAccount);
+        log.info("Balance for Account with card Number {}, After update is {}", cardNumber, cardAccount.getBalance());
+
+        saveTransaction(cardAccount, amount, TransactionType.DEPOSIT);
+        return "success";
+    }
+
+    @Override
+    public String withdraw(TransactionRequest transactionRequest) {
+        String cardNumber = transactionRequest.getCardNumber();
+        double amount = transactionRequest.getAmount();
+        log.info("you want to withdraw Amount {}, from customer with card Number {}",
+                amount, cardNumber);
+
+        Account cardAccount= IsValidCard(cardNumber);
+        double accountBalance = cardAccount.getBalance();
+        log.info("current Balance for Account with card Number {}, is {}", cardNumber, accountBalance);
+
+        if(accountBalance < amount){
+            log.error("Insufficient Balance for withdraw the current balance is {}", accountBalance);
+            throw new RecordNotFoundException("Insufficient Balance, The current balance is: "+ accountBalance);
         }
 
-        // Update account balance
-        account.setBalance(account.getBalance() + amount);
-        Account savedAccount = accountRepository.save(account);
+        cardAccount.setBalance(accountBalance - amount);
+        accountRepository.save(cardAccount);
+        log.info("Balance for Account with card Number {}, After update is {}", cardNumber, cardAccount.getBalance());
 
-        // Create transaction record
-        Transaction transaction = Transaction.builder()
-                .account(savedAccount)
-                .type(TransactionType.DEPOSIT)
-                .amount(amount)
-                .transactionDate(LocalDateTime.now())
-                .balanceAfter(savedAccount.getBalance())
-                .build();
-
-        Transaction savedTransaction = transactionRepository.save(transaction);
-        return TransactionMapper.mapToTransactionDto(savedTransaction);
+        saveTransaction(cardAccount, amount, TransactionType.WITHDRAWA);
+        return "success";
     }
 
-    @Override
-    @Transactional
-    public TransactionDto withdraw(String cardNumber, double amount) {
-            Account account = accountRepository.findByCardNumber(cardNumber)
-                    .orElseThrow(() -> new RuntimeException("Account not found"));
-
-            if (amount <= 0) {
-                throw new RuntimeException("Amount must be positive");
-            }
-
-           if (account.getBalance() < amount) {
-                throw new RuntimeException("Insufficient balance");
-            }
-
-            account.setBalance(account.getBalance() - amount);
-            Account savedAccount = accountRepository.save(account);
-
-            Transaction transaction = Transaction.builder()
-                    .account(savedAccount)
-                    .type(TransactionType.WITHDRAWA)
-                    .amount(amount)
-                    .transactionDate(LocalDateTime.now())
-                    .balanceAfter(savedAccount.getBalance())
-                    .build();
-
-            Transaction savedTransaction = transactionRepository.save(transaction);
-            return TransactionMapper.mapToTransactionDto(savedTransaction);
+    private Account IsValidCard(String cardNumber){
+        Account account = accountRepository.findByCardNumber(cardNumber)
+                .orElseThrow(() -> {
+                    log.error("This Card Number Not Valid: {}", cardNumber);
+                    return new RecordNotFoundException("This Card Number Not Valid "+ cardNumber);
+                });
+        log.info("This Card Number {}, is valid for this Account {}",cardNumber, account);
+        return account;
     }
 
-    @Override
-    public List<TransactionDto> getTransactionHistory(Long accountId) {
-        List<Transaction> transactions = transactionRepository.findByAccountIdOrderByTransactionDateDesc(accountId);
-        return transactions.stream()
-                .map(TransactionMapper::mapToTransactionDto)
-                .collect(Collectors.toList());
+    private void saveTransaction(Account account, double amount, TransactionType transactionType){
+        Transaction transaction = new Transaction();
+        transaction.setType(transactionType);
+        transaction.setAccount(account);
+        transaction.setCreated_at(LocalDateTime.now());
+        transaction.setAmount(amount);
+        transactionRepository.save(transaction);
+        log.info("This Transaction Saved Successfully : {}", transaction);
     }
 }

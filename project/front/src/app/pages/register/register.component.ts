@@ -1,47 +1,62 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './register.component.html',
-  styleUrl: './register.component.css'
+  styleUrls: ['./register.component.css']
 })
 export class RegisterComponent {
-  name = '';
-  email = '';
-  phone = '';
-  password = '';
+  registerForm: FormGroup;
   error = '';
   loading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    this.registerForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+  }
 
   onSubmit() {
-    this.error = '';
-    this.loading = true;
-    
-    console.log('Registering user:', { name: this.name, email: this.email, phone: this.phone });
-    
-    this.auth.register(this.name, this.email, this.phone, this.password).subscribe({
-      next: (response) => {
-        console.log('Registration response:', response);
-        this.loading = false;
-        // Store email for verification page
-        localStorage.setItem('pendingEmail', this.email);
-        console.log('Stored pending email:', this.email);
-        this.router.navigate(['/verify']);
-      },
-      error: (err) => {
-        console.error('Registration error:', err);
-        this.loading = false;
-        this.error = err.error?.message || 'Register failed';
-      }
-    });
+    if (this.registerForm.valid) {
+      this.loading = true;
+      this.error = '';
+      
+      const { name, email, password } = this.registerForm.value;
+      
+      this.authService.register(name, email, password).subscribe({
+        next: (response) => {
+          this.loading = false;
+          // Auto-login after registration
+          this.authService.login(email, password).subscribe({
+            next: (loginResponse) => {
+              localStorage.setItem('token', loginResponse.token);
+              localStorage.setItem('userEmail', email);
+              this.router.navigate(['/dashboard']);
+            },
+            error: (loginErr) => {
+              // If auto-login fails, redirect to login page
+              this.router.navigate(['/login']);
+            }
+          });
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = err.error?.message || 'Registration failed. Please try again.';
+        }
+      });
+    }
   }
 
   goToLogin() {
